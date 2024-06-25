@@ -9,11 +9,13 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"os"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -138,15 +140,26 @@ func NewListenerDialer() *listener {
 }
 
 func TestBridge(t *testing.T) {
+	// read dotenv file and get values
+	if err := godotenv.Load(); err != nil {
+		log.Warn().Msg("No .env file found")
+	}
+
+	redisAddr := os.Getenv("REDIS_ADDR")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisDB := 0
+	if dbStr := os.Getenv("REDIS_DB"); dbStr != "" {
+		fmt.Sscanf(dbStr, "%d", &redisDB)
+	}
+
 	ls := &listener{
 		conns: make(chan net.Conn),
 	}
 
 	log.Logger = zerolog.Nop()
-
-	// basic mem store creator
+	// in memory storage via Redis
 	maker := func(id string) bridge.Store {
-		return &store.Memory{}
+		return store.NewRedisStore(redisAddr, redisPassword, redisDB)
 	}
 
 	wh := make(chan bridge.WebhookData, 100)
@@ -291,6 +304,6 @@ func TestBridge(t *testing.T) {
 		ReduceMemoryUsage:     true,
 	}
 	if err := srv.Serve(ls); err != nil {
-		panic(err.Error())
+		t.Fatalf("Server failed: %s", err)
 	}
 }
