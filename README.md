@@ -7,10 +7,10 @@ This document outlines the environment variables used in the application along w
 - **Type**: Integer
 - **Environment Variable**: `VERBOSITY`
 - **Default Value**: `2`
-    - `3` = debug
-    - `2` = info
-    - `1` = warn
-    - `0` = error
+  - `3` = debug
+  - `2` = info
+  - `1` = warn
+  - `0` = error
 
 ### Addr
 - **Description**: TCP address to listen to.
@@ -90,10 +90,31 @@ This document outlines the environment variables used in the application along w
 - **Environment Variable**: `WEBHOOK_AUTH`
 - **Default Value**: Not set
 
+### RedisAddr
+- **Description**: Address of the Redis server.
+- **Type**: String
+- **Environment Variable**: `REDIS_ADDR`
+- **Default Value**: `localhost:6379`
+
+### RedisPassword
+- **Description**: Password for the Redis server.
+- **Type**: String
+- **Environment Variable**: `REDIS_PASSWORD`
+- **Default Value**: Not set
+
+### RedisDB
+- **Description**: Redis database number.
+- **Type**: Integer
+- **Environment Variable**: `REDIS_DB`
+- **Default Value**: `0`
+
 ### Unlimited Tokens
 - **Description**: You can set tokens to be unlimited. To do this, you need to fill out the file [unlimited_tokens.json](unlimited_tokens.json) in the format:
-```
-{
-  "tokens": ["first_token", "second_token"]
-}
-```
+
+### Using the `.env` file
+You can set the environment variables by creating a `.env` file in the root directory of your project with the following content:
+
+```plaintext
+REDIS_ADDR=localhost:6379
+REDIS_PASSWORD=your-password
+REDIS_DB=0

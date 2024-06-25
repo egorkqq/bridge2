@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"github.com/joho/godotenv"
 	"io"
 	"math/big"
 	"net/http"
@@ -31,16 +32,23 @@ type Config struct {
 	CORS                      bool   `env:"CORS, default=false"`                       // Enable CORS
 	JsonLogs                  bool   `env:"JSON_LOGS, default=false"`                  // Enable JSON logs output
 	HeartbeatSeconds          uint   `env:"HEARTBEAT_SECONDS, default=10"`             // Heartbeat every seconds
-	MaxMessageTTL             uint   `env:"MAX_MESSAGE_TTL, default=300"`              // "Max message ttl
+	MaxMessageTTL             uint   `env:"MAX_MESSAGE_TTL, default=300"`              // Max message ttl
 	HeartbeatGroups           uint   `env:"HEARTBEAT_GROUPS, default=10"`              // Heartbeat groups (shards)
 	PushRPS                   uint   `env:"PUSH_RPS_LIMIT, default=5"`                 // Push RPS limit
 	MaxSubscribersPerIP       uint   `env:"MAX_SUBSCRIBERS_PER_IP, default=100"`       // Parallel subscriptions per IP limit
 	MaxClientsPerSubscription uint   `env:"MAX_CLIENTS_PER_SUBSCRIPTION, default=100"` // Clients limit per subscription
 	WebhookURL                string `env:"WEBHOOK_URL"`
-	WebhookAuth               string `env:"WEBHOOK_AUTH"` // Bearer token which will be sent in Authorization header of webhook
+	WebhookAuth               string `env:"WEBHOOK_AUTH"`                      // Bearer token which will be sent in Authorization header of webhook
+	RedisAddr                 string `env:"REDIS_ADDR,default=localhost:6379"` // Redis endpoint
+	RedisPassword             string `env:"REDIS_PASSWORD,default="`           // Redis auth password
+	RedisDB                   int    `env:"REDIS_DB,default=0"`                // Redis db variable to specify which db
 }
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Warn().Msg("No .env file found")
+	}
+
 	var cfg Config
 	if err := envconfig.Process(context.Background(), &cfg); err != nil {
 		panic("failed to process env: " + err.Error())
@@ -63,9 +71,9 @@ func main() {
 		log.Logger = log.Logger.Level(zerolog.ErrorLevel).With().Logger()
 	}
 
-	// basic mem store creator
+	// Redis store creator
 	maker := func(id string) bridge.Store {
-		return &store.Memory{}
+		return store.NewRedisStore(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 	}
 
 	var webhooks []chan<- bridge.WebhookData
@@ -86,7 +94,6 @@ func main() {
 		HeartbeatSeconds:       int(cfg.HeartbeatSeconds),
 		HeartbeatGroups:        int(cfg.HeartbeatGroups),
 	})
-
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		if err := http.ListenAndServe(cfg.MetricsAddr, nil); err != nil {

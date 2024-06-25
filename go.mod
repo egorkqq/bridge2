@@ -3,8 +3,10 @@ module tonconnect-bridge
 go 1.22.0
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/kevinms/leakybucket-go v0.0.0-20200115003610-082473db97ca
 	github.com/prometheus/client_golang v1.19.0
+	github.com/redis/go-redis/v9 v9.5.2
 	github.com/rs/zerolog v1.32.0
 	github.com/sethvargo/go-envconfig v1.0.1
 	github.com/valyala/fasthttp v1.52.0
