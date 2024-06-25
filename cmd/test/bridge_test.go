@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -132,24 +133,28 @@ func (l *listener) Addr() net.Addr {
 	}
 }
 
-func NewListenerDialer() *listener {
-	ld := &listener{
+func newListenerDialer() *listener {
+	var ld = &listener{
 		conns: make(chan net.Conn),
 	}
 	return ld
 }
 
 func TestBridge(t *testing.T) {
-	// read dotenv file and get values
+	// load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
-		log.Warn().Msg("No .env file found")
+		t.Log("No .env file found")
 	}
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisDB := 0
 	if dbStr := os.Getenv("REDIS_DB"); dbStr != "" {
-		fmt.Sscanf(dbStr, "%d", &redisDB)
+		var err error
+		redisDB, err = strconv.Atoi(dbStr)
+		if err != nil {
+			t.Fatalf("Invalid REDIS_DB value: %s", dbStr)
+		}
 	}
 
 	ls := &listener{
@@ -157,7 +162,7 @@ func TestBridge(t *testing.T) {
 	}
 
 	log.Logger = zerolog.Nop()
-	// in memory storage via Redis
+	// redis store creator
 	maker := func(id string) bridge.Store {
 		return store.NewRedisStore(redisAddr, redisPassword, redisDB)
 	}
@@ -227,7 +232,7 @@ func TestBridge(t *testing.T) {
 			}
 		}
 
-		fmt.Println("INITIALIZED, STARTING PUSHES")
+		t.Log("INITIALIZED, STARTING PUSHES")
 
 		const rps = 800
 		speed := time.Second / time.Duration(rps)
