@@ -133,12 +133,14 @@ func (l *listener) Addr() net.Addr {
 	}
 }
 
-func newListenerDialer() *listener {
-	var ld = &listener{
-		conns: make(chan net.Conn),
-	}
-	return ld
-}
+// Unused function, because I don't know why devs write it
+
+//func newListenerDialer() *listener {
+//	var ld = &listener{
+//		conns: make(chan net.Conn),
+//	}
+//	return ld
+//}
 
 func TestBridge(t *testing.T) {
 	// load environment variables from .env file
