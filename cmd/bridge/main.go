@@ -21,6 +21,8 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"tonconnect-bridge/internal/bridge"
 	"tonconnect-bridge/internal/store"
+
+	"github.com/valyala/fasthttp"
 )
 
 type Config struct {
