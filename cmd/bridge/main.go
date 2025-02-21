@@ -73,6 +73,13 @@ func main() {
 
 	// Redis store creator
 	maker := func(id string) bridge.Store {
+		
+		    // Log Redis connection details
+		    fmt.Printf("Redis Connection Details:\n")
+		    fmt.Printf("  Address: %s\n", cfg.RedisAddr)
+		    fmt.Printf("  Password: %s\n", cfg.RedisPassword)
+		    fmt.Printf("  Database: %d\n", cfg.RedisDB)
+		
 		return store.NewRedisStore(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 	}
 
