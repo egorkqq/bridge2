@@ -8,18 +8,17 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"github.com/joho/godotenv"
 	"io"
 	"math/big"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sethvargo/go-envconfig"
-	"github.com/valyala/fasthttp"
 	"tonconnect-bridge/internal/bridge"
 	"tonconnect-bridge/internal/store"
 )
@@ -45,10 +44,6 @@ type Config struct {
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Warn().Msg("No .env file found")
-	}
-
 	var cfg Config
 	if err := envconfig.Process(context.Background(), &cfg); err != nil {
 		panic("failed to process env: " + err.Error())
@@ -71,14 +66,33 @@ func main() {
 		log.Logger = log.Logger.Level(zerolog.ErrorLevel).With().Logger()
 	}
 
+	log.Info().
+		Str("redis_addr", cfg.RedisAddr).
+		Str("redis_password", strings.Repeat("*", len(cfg.RedisPassword))).  // маскируем пароль
+		Int("redis_db", cfg.RedisDB).
+		Msg("Redis configuration loaded")
+
 	// Redis store creator
 	maker := func(id string) bridge.Store {
+		// Create a test Redis connection to verify connectivity
+		testStore := store.NewRedisStore(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 		
-		    // Log Redis connection details
-		    fmt.Printf("Redis Connection Details:\n")
-		    fmt.Printf("  Address: %s\n", cfg.RedisAddr)
-		    fmt.Printf("  Password: %s\n", cfg.RedisPassword)
-		    fmt.Printf("  Database: %d\n", cfg.RedisDB)
+		// Test connection by pinging Redis
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		
+		if err := testStore.TestConnection(ctx); err != nil {
+			log.Error().
+				Str("addr", cfg.RedisAddr).
+				Int("db", cfg.RedisDB).
+				Err(err).
+				Msg("Failed to connect to Redis")
+		} else {
+			log.Info().
+				Str("addr", cfg.RedisAddr).
+				Int("db", cfg.RedisDB).
+				Msg("Successfully connected to Redis")
+		}
 		
 		return store.NewRedisStore(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 	}

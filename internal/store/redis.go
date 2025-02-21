@@ -77,3 +77,7 @@ func (r *RedisStore) ExecuteAll(lastEventId uint64, exec func(event *bridge.Even
 
 	return nil
 }
+
+func (r *RedisStore) TestConnection(ctx context.Context) error {
+	return r.client.Ping(ctx).Err()
+}
